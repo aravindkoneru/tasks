@@ -1,25 +1,27 @@
 import './App.css';
+import "react-datepicker/dist/react-datepicker.css";
 
 import React, { Component } from "react";
+import DatePicker from "react-datepicker";
 import Modal from "./components/Modal";
-import axios from "axios";
-//import getCookie from "./utils/get_cookie"
-
-axios.defaults.xsrfHeaderName = "X-CSRFToken";
-axios.defaults.xsrfCookieName = "csrftoken";
+import axios from "./utils/axios";
 
 class App extends Component {
     constructor(props) {
         super(props);
+        const currentDate = new Date()
         this.state = {
             viewCompleted: false,
             todoList: [],
             modal: false,
-            activeITem: {
+            activeItem: {
                 title: "",
                 description: "",
                 completed: false,
+                created_at: null,
+                edited_at: null,
             },
+            date: currentDate
         };
     }
 
@@ -28,8 +30,11 @@ class App extends Component {
     }
 
     refreshList = () => {
+        let params = {"date": this.state.date}
+        console.log("params: " , params)
+
         axios
-            .get("/api/todos/")
+            .get("/api/todos/", {params})
             .then((res)=> this.setState( {todoList: res.data }))
             .catch((err) => console.log(err));
     };
@@ -41,16 +46,20 @@ class App extends Component {
     handleSubmit = (item) => {
         this.toggle();
 
+        console.log("submitting: ", item)
+
         if (item.id) {
             axios
                 .put(`/api/todos/${item.id}/`, item)
-                .then((res) => this.refreshList());
+                .then((res) => this.refreshList())
+                .catch((err) => console.log(err));
             return;
         }
 
         axios
             .post("/api/todos/", item)
-            .then((res) => this.refreshList());
+            .then((res) => this.refreshList())
+            .catch((err) => console.log(err));
     };
 
     deleteItem = (item) => {
@@ -60,7 +69,7 @@ class App extends Component {
     };
 
     createItem = () => {
-        const item = {title: "", description: "", completed: ""};
+        const item = {title: "", description: "", completed: false, created_at: this.state.date.toISOString()};
 
         this.setState( {activeItem: item, modal: !this.state.modal });
     };
@@ -75,6 +84,10 @@ class App extends Component {
         }
 
         return this.setState({viewCompleted: false});
+    };
+
+    loadForDate = (date) => {
+        this.setState({ date: date }, this.refreshList);
     };
 
     renderTabList = () => {
@@ -136,7 +149,24 @@ class App extends Component {
     render() {
         return (
             <main className="container">
-                <h1 className="text-white text-uppercase text-center my-4">Todo App</h1>
+                <h1 className="text-black text-uppercase text-center my-4">Todo App</h1>
+                <div className="row">
+                    <div className="col">
+                    </div>
+                    <div className="col-md-auto">
+                        <DatePicker 
+                            closeOnScroll={true}
+                            selected={this.state.date}
+                            onChange={(date) => this.loadForDate(date)}
+                            calendarClassName="rasta-stripes"
+                        />
+                    </div>
+                    <div className="col">
+                    </div>
+                </div>
+
+
+
                 <div className="row">
                     <div className="col-md-6 col-sm-10 mx-auto p-0">
                         <div className="card p-3">
